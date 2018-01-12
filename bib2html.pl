@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -s
 
 use strict;
 
@@ -6,21 +6,78 @@ $::PMIDURL = "http://www.ncbi.nlm.nih.gov/pubmed/%s";
 $::DOIURL  = "http://dx.doi.org/%s";
 $::EndSentence = 0;
 
+UsageDie() if(defined($::h));
+
 main();
 
 sub main
 {
-    my %entry = ();
-    while(%entry = ReadEntry())
+    # Read all data into an array of hashes
+    my @entries = ();
+    my $hEntry = {};
+    while(%{$hEntry} = ReadEntry())
     {
-        DeTeXifyEntry(\%entry);
-        FixCase(\%entry, 'title');
-        FixCase(\%entry, 'booktitle');
-        DisplayEntry(%entry);
-        %entry = ();
+        DeTeXifyEntry($hEntry);
+        FixCase($hEntry, 'title');
+        FixCase($hEntry, 'booktitle');
+        push @entries, $hEntry;
+        $hEntry = {};
+    }
+
+    # Sort on year if required
+    if(defined($::y))
+    {
+        @entries = SortEntriesOnYear(defined($::r), @entries);
+    }
+
+    if(defined($::t))
+    {
+        my @types = ('', 'review', 'chapter', '!', 'submitted');
+#        foreach my $type (@types)
+#        {
+    }
+    else
+    {
+        DisplayEntries(@entries);
     }
 }
 
+sub DisplayEntries
+{
+    my(@entries) = @_;
+
+    my $nEntries = scalar(@entries);
+    my $lastYear = '';
+
+    for(my $i=0; $i<$nEntries; $i++)
+    {
+        my $year = $entries[$i]->{year};
+        $year = "\u$year";
+        if($year ne $lastYear)
+        {
+            print "<h3 id='$year'>$year</h3>\n";
+            $lastYear = $year;
+        }
+        DisplayEntry(%{$entries[$i]});
+    }
+}
+
+sub SortEntriesOnYear
+{
+    my ($reverse, @entries) = @_;
+
+    my @sorted = ();
+    if($reverse)
+    {
+        @sorted = sort{ $b->{year} <=> $a->{year} } @entries;
+    }
+    else
+    {
+        @sorted = sort{ $a->{year} <=> $b->{year} } @entries;
+    }
+        
+    return(@sorted);
+}
 
 sub DisplayEntry
 {
@@ -536,4 +593,17 @@ sub ReadEntry
 
     return(%entry);
 
+}
+
+sub UsageDie
+{
+    print <<__EOF;
+
+bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
+
+Usage: bib2html [-y|-t][-r] file.bib > file.html
+       -y Sort by year
+
+__EOF
+    exit 0;
 }

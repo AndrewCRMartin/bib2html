@@ -30,35 +30,82 @@ sub main
         @entries = SortEntriesOnYear(defined($::r), @entries);
     }
 
+    # Define types and title for each type
+    my @types  = ('article',  'review',  'chapter',       
+                  'meeting abstract',  '!',     'submitted');
+    my @labels = ('Articles', 'Reviews', 'Book chapters', 
+                  'Meeting Abstracts', 'Other', 'Submitted');
+
+    # Display by type
     if(defined($::t))
     {
-        my @types = ('', 'review', 'chapter', '!', 'submitted');
-#        foreach my $type (@types)
-#        {
+        my $count = 0;
+        foreach my $type (@types)
+        {
+            my $id=$type;
+            $id = 'other' if($type eq '!');
+            $id = ''      if($type eq '*');
+
+            print "\n\n\n<h2><a id='$id'>$labels[$count]</a></h2>\n";
+            DisplayEntries($type, \@types, @entries);
+            $count++;
+        }
     }
     else
     {
-        DisplayEntries(@entries);
+        DisplayEntries('*', \@types, @entries);
     }
 }
 
 sub DisplayEntries
 {
-    my(@entries) = @_;
+    my($showType, $aTypes, @entries) = @_;
 
     my $nEntries = scalar(@entries);
     my $lastYear = '';
 
     for(my $i=0; $i<$nEntries; $i++)
     {
-        my $year = $entries[$i]->{year};
-        $year = "\u$year";
-        if($year ne $lastYear)
+        # Determine whether we are going to display this entry
+        my $doit = 0;
+        $doit = 1 if($showType eq '*');
+        $doit = 1 if(($showType eq 'article') && 
+                     (!defined($entries[$i]->{type}) || 
+                      ($entries[$i]->{type} eq 'article')));
+        $doit = 1 if(defined($entries[$i]->{type}) && 
+                     ($showType eq $entries[$i]->{type}));
+        if($showType eq '!')
         {
-            print "<h3 id='$year'>$year</h3>\n";
-            $lastYear = $year;
+            if(defined($entries[$i]->{type}))
+            {
+                $doit = 1;
+                foreach my $otherType (@$aTypes)
+                {
+                    if($entries[$i]->{type} eq $otherType)
+                    {
+                        $doit = 0;
+                        last;
+                    }
+                }
+            }
         }
-        DisplayEntry(%{$entries[$i]});
+
+        # Display it if required
+        if($doit)
+        {
+            my $year = $entries[$i]->{year};
+            $year = "\u$year";
+            if($year ne $lastYear)
+            {
+                my $id=$showType;
+                $id = 'other' if($showType eq '!');
+                $id = ''      if($showType eq '*');
+                
+                print "\n<h3 id='$id$year'>$year</h3>\n";
+                $lastYear = $year;
+            }
+            DisplayEntry(%{$entries[$i]});
+        }
     }
 }
 
@@ -349,7 +396,7 @@ sub PrintType
         if($entry{'type'} ne 'submitted')
         {
             my $type = $entry{'type'};
-            $type = "\L$type";
+            $type = 'Book chapter' if($type eq 'chapter');
             $type = "\u$type";
             print " <b>($type)</b>";
             $::EndSentence = 1;
@@ -601,8 +648,20 @@ sub UsageDie
 
 bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
 
-Usage: bib2html [-y|-t][-r] file.bib > file.html
+Usage: bib2html [-y [-r]][-t] file.bib > file.html
        -y Sort by year
+       -r Reverse the sort
+       -t Group by publication type
+
+This is a very simple program to generate an HTML file from a .bib file.
+It does not have style files - if you want to change the style, you need
+to edit the Perl. However the Perl is designed to allow this quite 
+easily and uses a similar organization to the BibTeX style language.
+
+Currently it is restricted in the formatting of .bib files it will accept.
+
+The HTML does not include any headers, etc. as it is designed to be 
+embedded in a larger page.
 
 __EOF
     exit 0;

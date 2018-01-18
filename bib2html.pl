@@ -14,7 +14,22 @@ sub main
 {
     # Read all data into an array of hashes
     my @entries = ();
-    my $hEntry = {};
+    my $hEntry  = {};
+    my $tocFp;
+
+    if(defined($::c))
+    {
+        if(open($tocFp, '>', $::c))
+        {
+            print $tocFp "<div class='bibtoc'>\n";
+        }
+        else
+        {
+            print STDERR "Can't write table of contents: $::c\n";
+            exit 1;
+        }
+    }
+
     while(%{$hEntry} = ReadEntry())
     {
         DeTeXifyEntry($hEntry);
@@ -47,19 +62,30 @@ sub main
             $id = ''      if($type eq '*');
 
             print "\n\n\n<h2><a id='$id'>$labels[$count]</a></h2>\n";
-            DisplayEntries($type, \@types, @entries);
+            if($tocFp)
+            {
+                print $tocFp "<h2><a href='#$id'>$labels[$count]</a></h2>\n";
+            }
+            DisplayEntries($type, $tocFp, \@types, @entries);
             $count++;
         }
     }
     else
     {
-        DisplayEntries('*', \@types, @entries);
+        DisplayEntries('*', $tocFp, \@types, @entries);
     }
+
+    if($tocFp)
+    {
+        print $tocFp "</div> <!-- bibtoc -->\n";
+        close $tocFp;
+    }
+
 }
 
 sub DisplayEntries
 {
-    my($showType, $aTypes, @entries) = @_;
+    my($showType, $tocFp, $aTypes, @entries) = @_;
 
     my $nEntries = scalar(@entries);
     my $lastYear = '';
@@ -101,7 +127,11 @@ sub DisplayEntries
                 $id = 'other' if($showType eq '!');
                 $id = ''      if($showType eq '*');
                 
-                print "\n<h3 id='$id$year'>$year</h3>\n";
+                print "\n<h3><a id='$id$year'>$year</a></h3>\n";
+                if($tocFp)
+                {
+                    print $tocFp "<a href='#$id$year'>$year</a>\n";
+                }
                 $lastYear = $year;
             }
             DisplayEntry(%{$entries[$i]});
@@ -648,10 +678,11 @@ sub UsageDie
 
 bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
 
-Usage: bib2html [-y [-r]][-t] file.bib > file.html
+Usage: bib2html [-y [-r]][-t][-c toc.html] file.bib > file.html
        -y Sort by year
        -r Reverse the sort
        -t Group by publication type
+       -c Create table of contents
 
 This is a very simple program to generate an HTML file from a .bib file.
 It does not have style files - if you want to change the style, you need

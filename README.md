@@ -51,26 +51,26 @@ Summary of fields supported in different entry types
 | incollection | article | misc | field     |
 |--------------|---------|------|-----------|
 |C             |         |      | address   |
-|C             | A       |      | author    |
+|C             | A       | M    | author    |
 |C             |         |      | booktitle |
 |C             |         |      | bookurl   |
-|C             | A       |      | doi       |
+|C             | A       | M    | doi       |
 |C             |         |      | edition   |
 |C             |         |      | editor    |
-|              | A       |      | journal   |
-|C             | A       |      | note      |
-|C             | A       |      | pages     |
-|              |         |      | pct       |
-|              |         |      | pcturl    |
-|C             | A       |      | pdf       |
-|C             | A       |      | pmid      |
+|              | A       | M    | journal   |
+|C             | A       | M    | note      |
+|C             | A       | M    | pages     |
+|              |         | M    | pct       |
+|              |         | M    | pcturl    |
+|C             | A       | M    | pdf       |
+|C             | A       | M    | pmid      |
 |C             |         |      | publisher |
-|C             | A       |      | pubpdf    |
-|C             | A       |      | web       |
-|C             | A       |      | subpdf    |
-|C             | A       |      | suppmat   |
-|C             | A       |      | title     |
-|C             | A       |      | type      |
-|C             | A       |      | url       |
-|C             | A       |      | volume    |
-|C             | A       |      | year      |
+|C             | A       | M    | pubpdf    |
+|C             | A       | M    | web       |
+|C             | A       | M    | subpdf    |
+|C             | A       | M    | suppmat   |
+|C             | A       | M    | title     |
+|C             | A       | M    | type      |
+|C             | A       | M    | url       |
+|C             | A       | M    | volume    |
+|C             | A       | M    | year      |

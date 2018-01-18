@@ -5,6 +5,15 @@ bib2html is a simple program for generating an HTML representation of
 a BibTeX .bib file. It supports links to PubMed and to PDF files and a
 table of contents.
 
+Usage
+-----
+
+Type:
+
+      bib2html -h
+
+for help.
+
 Limitations
 -----------
 

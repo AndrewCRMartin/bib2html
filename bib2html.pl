@@ -1,15 +1,105 @@
 #!/usr/bin/perl -s
+#*************************************************************************
+#
+#   Program:    bib2html
+#   File:       bib2html.pl
+#   
+#   Version:    V1.0
+#   Date:       18.01.18
+#   Function:   Convert a BibTeX file to HTML
+#   
+#   Copyright:  (c) Dr. Andrew C. R. Martin, UCL, 2018
+#   Author:     Dr. Andrew C. R. Martin
+#   Address:    Institute of Structural and Molecular Biology
+#               Division of Biosciences
+#               University College
+#               Gower Street
+#               London
+#               WC1E 6BT
+#   EMail:      andrew@bioinf.org.uk
+#               
+#*************************************************************************
+#
+#   This program is not in the public domain, but it may be copied
+#   according to the conditions laid out in the accompanying file
+#   COPYING.DOC
+#
+#   The code may be modified as required, but any modifications must be
+#   documented so that the person responsible can be identified. If 
+#   someone else breaks this code, I don't want to be blamed for code 
+#   that does not work! 
+#
+#   The code may not be sold commercially or included as part of a 
+#   commercial product except as described in the file COPYING.DOC.
+#
+#*************************************************************************
+#
+#   Description:
+#   ============
+#   Convert a .bib file (in a restricted format) to a .html file
+#
+#*************************************************************************
+#
+#   Usage:
+#   ======
+#
+#*************************************************************************
+#
+#   Revision History:
+#   =================
+#   V1.0   18.01.18   Original   By: ACRM
+#
+#*************************************************************************
+# Add the path of the executable to the library path
+#use FindBin;
+#use lib $FindBin::Bin;
+# Or if we have a bin directory and a lib directory
+#use Cwd qw(abs_path);
+#use FindBin;
+#use lib abs_path("$FindBin::Bin/../lib");
 
 use strict;
 
+#*************************************************************************
+# Global variables
+#
 $::PMIDURL = "http://www.ncbi.nlm.nih.gov/pubmed/%s";
 $::DOIURL  = "http://dx.doi.org/%s";
 $::EndSentence = 0;
+$::tocCSS = <<__EOF;
+<style type='text/css'>
+.bibtoc {
+  font: 12pt bold Helvetica,Arial,sans-serif;
+  width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+  text-align: center;
+}
+.bibtoc a {
+    text-decoration: none;
+}
+.bibtoc a:link, a:visited, a:hover, a:active {
+  color: black;
+}
+.bibtocsection {
+  padding: 0.25em 0em;
+}
+.bibtochead { font-weight: bold;
+display: block;
+}
+.bibtochead::after {
+/*  content: ":"; */
+}
+
+</style>
+__EOF
+#*************************************************************************
 
 UsageDie() if(defined($::h));
 
 main();
 
+#*************************************************************************
 sub main
 {
     # Read all data into an array of hashes
@@ -21,6 +111,11 @@ sub main
     {
         if(open($tocFp, '>', $::c))
         {
+            if(defined($::css))
+            {
+                print $tocFp $::tocCSS;
+            }
+                   
             print $tocFp "<div class='bibtoc'>\n";
         }
         else
@@ -51,6 +146,11 @@ sub main
     my @labels = ('Articles', 'Reviews', 'Book chapters', 
                   'Meeting Abstracts', 'Other', 'Submitted');
 
+    # Remove any types/labels that haven't been used
+    my($aTypes, $aLabels) = FilterTypesAndLabels(\@entries, \@types, \@labels);
+    @types  = @$aTypes;
+    @labels = @$aLabels;
+
     # Display by type
     if(defined($::t))
     {
@@ -60,13 +160,16 @@ sub main
             my $id=$type;
             $id = 'other' if($type eq '!');
             $id = ''      if($type eq '*');
+            $id =~ s/\s//g;
 
             print "\n\n\n<h2><a id='$id'>$labels[$count]</a></h2>\n";
             if($tocFp)
             {
-                print $tocFp "<h2><a href='#$id'>$labels[$count]</a></h2>\n";
+                print $tocFp "<div class='bibtocsection'>\n";
+                print $tocFp "<span class='bibtochead'><a href='#$id'>$labels[$count]</a></span>\n";
             }
             DisplayEntries($type, $tocFp, \@types, @entries);
+            print $tocFp "</div> <!-- bibtocsection -->\n";
             $count++;
         }
     }
@@ -83,12 +186,47 @@ sub main
 
 }
 
+#*************************************************************************
+sub FilterTypesAndLabels
+{
+    my($aEntries, $aTypes, $aLabels) = @_;
+    my @types  = ();
+    my @labels = ();
+    my $count  = 0;
+
+    foreach my $type (@$aTypes)
+    {
+        if($count == 0)
+        {
+            push @types, $type;
+            push @labels, $$aLabels[$count];
+        }
+        else
+        {
+            foreach my $entry (@$aEntries)
+            {
+                if(defined($entry->{type}) && ($entry->{type} eq $type))
+                {
+                    push @types, $type;
+                    push @labels, $$aLabels[$count];
+                    last;
+                }
+            }
+        }
+        $count++;
+    }
+    return(\@types, \@labels);
+}
+
+
+#*************************************************************************
 sub DisplayEntries
 {
     my($showType, $tocFp, $aTypes, @entries) = @_;
 
     my $nEntries = scalar(@entries);
     my $lastYear = '';
+    my $shownTocEntry = 0;
 
     for(my $i=0; $i<$nEntries; $i++)
     {
@@ -124,13 +262,17 @@ sub DisplayEntries
             if($year ne $lastYear)
             {
                 my $id=$showType;
-                $id = 'other' if($showType eq '!');
-                $id = ''      if($showType eq '*');
-                
-                print "\n<h3><a id='$id$year'>$year</a></h3>\n";
+                $id  =  'other' if($showType eq '!');
+                $id  =  ''      if($showType eq '*');
+                $id .=  $year;
+                $id  =~ s/\s//g;
+
+                print "\n<h3><a id='$id'>$year</a></h3>\n";
                 if($tocFp)
                 {
-                    print $tocFp "<a href='#$id$year'>$year</a>\n";
+                    print $tocFp " .. " if($shownTocEntry);
+                    print $tocFp "<a href='#$id'>$year</a>\n";
+                    $shownTocEntry = 1;
                 }
                 $lastYear = $year;
             }
@@ -139,6 +281,7 @@ sub DisplayEntries
     }
 }
 
+#*************************************************************************
 sub SortEntriesOnYear
 {
     my ($reverse, @entries) = @_;
@@ -146,16 +289,17 @@ sub SortEntriesOnYear
     my @sorted = ();
     if($reverse)
     {
-        @sorted = sort{ $b->{year} <=> $a->{year} } @entries;
+        @sorted = sort{ $a->{year} <=> $b->{year} } @entries;
     }
     else
     {
-        @sorted = sort{ $a->{year} <=> $b->{year} } @entries;
+        @sorted = sort{ $b->{year} <=> $a->{year} } @entries;
     }
         
     return(@sorted);
 }
 
+#*************************************************************************
 sub DisplayEntry
 {
     my(%entry) = @_;
@@ -178,6 +322,7 @@ sub DisplayEntry
     }
 }
 
+#*************************************************************************
 sub DisplayArticle
 {
     my(%entry) = @_;
@@ -205,6 +350,7 @@ sub DisplayArticle
 }
 
 
+#*************************************************************************
 sub DisplayInCollection
 {
     my(%entry) = @_;
@@ -235,6 +381,7 @@ sub DisplayInCollection
     }
 }
 
+#*************************************************************************
 sub DisplayMisc
 {
     my(%entry) = @_;
@@ -265,6 +412,7 @@ sub DisplayMisc
 }
 
 
+#*************************************************************************
 sub EndSentence
 {
     if($::EndSentence)
@@ -274,6 +422,7 @@ sub EndSentence
     $::EndSentence = 0;
 }
 
+#*************************************************************************
 sub PrintPCT
 {
     my(%entry) = @_;
@@ -294,6 +443,7 @@ sub PrintPCT
     }
 }
 
+#*************************************************************************
 sub PrintPublisher
 {
     my(%entry) = @_;
@@ -309,6 +459,7 @@ sub PrintPublisher
     }
 }
 
+#*************************************************************************
 sub PrintEdition
 {
     my(%entry) = @_;
@@ -319,6 +470,7 @@ sub PrintEdition
     }
 }
 
+#*************************************************************************
 sub PrintEditor
 {
     my(%entry) = @_;
@@ -336,6 +488,7 @@ sub PrintEditor
     }
 }
 
+#*************************************************************************
 sub PrintVolumePages
 {
     my(%entry) = @_;
@@ -357,6 +510,7 @@ sub PrintVolumePages
 
 }
 
+#*************************************************************************
 sub PrintJournal
 {
     my(%entry) = @_;
@@ -371,6 +525,7 @@ sub PrintJournal
     }
 }
 
+#*************************************************************************
 sub PrintYear
 {
     my(%entry) = @_;
@@ -384,6 +539,7 @@ sub PrintYear
     }
 }
 
+#*************************************************************************
 sub FixNameList
 {
     my ($names) = @_;
@@ -395,6 +551,7 @@ sub FixNameList
     return($names);
 }
 
+#*************************************************************************
 sub PrintAuthor
 {
     my(%entry) = @_;
@@ -408,6 +565,7 @@ sub PrintAuthor
     }
 }
 
+#*************************************************************************
 sub PrintNote
 {
     my(%entry) = @_;
@@ -418,6 +576,7 @@ sub PrintNote
     }
 }
 
+#*************************************************************************
 sub PrintType
 {
     my(%entry) = @_;
@@ -434,6 +593,7 @@ sub PrintType
     }
 }
 
+#*************************************************************************
 sub PrintWeb
 {
     my(%entry) = @_;
@@ -444,6 +604,7 @@ sub PrintWeb
     }
 }
 
+#*************************************************************************
 sub PrintSuppMat
 {
     my(%entry) = @_;
@@ -454,6 +615,7 @@ sub PrintSuppMat
     }
 }
 
+#*************************************************************************
 sub PrintPMID
 {
     my(%entry) = @_;
@@ -467,6 +629,7 @@ sub PrintPMID
     }
 }
 
+#*************************************************************************
 sub PrintDOI
 {
     my(%entry) = @_;
@@ -480,6 +643,7 @@ sub PrintDOI
     }
 }
 
+#*************************************************************************
 sub PrintPDF
 {
     my(%entry) = @_;
@@ -502,6 +666,7 @@ sub PrintPDF
     }
 }
 
+#*************************************************************************
 sub PrintTitleWithLink
 {
     my($hEntry, $titleItem, $urlItem1, $urlItem2, $preText) = @_;
@@ -535,6 +700,7 @@ sub PrintTitleWithLink
     }
 }
 
+#*************************************************************************
 sub CheckEntry
 {
     my($hEntry, @fields) = @_;
@@ -549,6 +715,7 @@ sub CheckEntry
     return(1);
 }
 
+#*************************************************************************
 # Changes to all lower case (except for the first character, except for things in {}
 # which are stripped
 sub FixCase
@@ -589,6 +756,7 @@ sub FixCase
     $$hEntry{$item} = $newdata;
 }
 
+#*************************************************************************
 sub DeTeXifyEntry
 {
     my($hEntry) = @_;
@@ -616,6 +784,7 @@ sub DeTeXifyEntry
 }
 
 
+#*************************************************************************
 sub ReadEntry
 {
     my $inEntry = 0;
@@ -672,13 +841,14 @@ sub ReadEntry
 
 }
 
+#*************************************************************************
 sub UsageDie
 {
     print <<__EOF;
 
 bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
 
-Usage: bib2html [-y [-r]][-t][-c toc.html] file.bib > file.html
+Usage: bib2html [-y [-r]][-t][-c=toc.html] file.bib > file.html
        -y Sort by year
        -r Reverse the sort
        -t Group by publication type

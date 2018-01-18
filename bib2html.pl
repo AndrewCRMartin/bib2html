@@ -107,6 +107,8 @@ sub main
     my $hEntry  = {};
     my $tocFp;
 
+    $::c = $::toc if(defined($::toc)); # Allow -toc or -c for table of contents 
+
     if(defined($::c))
     {
         if(open($tocFp, '>', $::c))
@@ -169,7 +171,7 @@ sub main
                 print $tocFp "<span class='bibtochead'><a href='#$id'>$labels[$count]</a></span>\n";
             }
             DisplayEntries($type, $tocFp, \@types, @entries);
-            print $tocFp "</div> <!-- bibtocsection -->\n";
+            print $tocFp "</div> <!-- bibtocsection -->\n" if($tocFp);
             $count++;
         }
     }
@@ -848,11 +850,12 @@ sub UsageDie
 
 bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
 
-Usage: bib2html [-y [-r]][-t][-c=toc.html] file.bib > file.html
-       -y Sort by year
-       -r Reverse the sort
-       -t Group by publication type
-       -c Create table of contents
+Usage: bib2html [-y [-r]][-t][-c=toc.html [-css]] file.bib > file.html
+       -y      Sort by year
+       -r      Reverse the sort
+       -t      Group by publication type
+       -c|-toc Create table of contents
+       -css    Write CSS into the toc.html file
 
 This is a very simple program to generate an HTML file from a .bib file.
 It does not have style files - if you want to change the style, you need

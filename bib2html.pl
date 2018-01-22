@@ -198,12 +198,37 @@ sub FilterTypesAndLabels
 
     foreach my $type (@$aTypes)
     {
-        if($count == 0)
+        if($count == 0)         # Always keep the first type (article)
         {
             push @types, $type;
             push @labels, $$aLabels[$count];
         }
-        else
+        elsif($type eq '!')     # See if there are any 'other' entries
+        {
+            my $gotOther = 1;
+
+            foreach my $entry (@$aEntries)
+            {
+                if(defined($entry->{type}))
+                {
+                    foreach my $otherType (@$aTypes)
+                    {
+                        if($entry->{type} eq $otherType)
+                        {
+                            $gotOther = 0;
+                            goto skip;
+                        }
+                    }
+                }
+            }
+          skip:
+            if($gotOther)
+            {
+                push @types, $type;
+                push @labels, $$aLabels[$count];
+            }
+        }
+        else                    # See if this type has been used
         {
             foreach my $entry (@$aEntries)
             {

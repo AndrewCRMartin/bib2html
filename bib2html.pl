@@ -189,6 +189,7 @@ sub main
 }
 
 #*************************************************************************
+# 23.01.18 Fixed bug in filtering for 'other'
 sub FilterTypesAndLabels
 {
     my($aEntries, $aTypes, $aLabels) = @_;
@@ -211,14 +212,16 @@ sub FilterTypesAndLabels
             {
                 if(defined($entry->{type}))
                 {
+                    $gotOther = 1;
                     foreach my $otherType (@$aTypes)
                     {
                         if($entry->{type} eq $otherType)
                         {
                             $gotOther = 0;
-                            goto skip;
+                            last;
                         }
                     }
+                    goto skip if($gotOther);
                 }
             }
           skip:

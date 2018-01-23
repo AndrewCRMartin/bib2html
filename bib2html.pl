@@ -4,8 +4,8 @@
 #   Program:    bib2html
 #   File:       bib2html.pl
 #   
-#   Version:    V1.0
-#   Date:       18.01.18
+#   Version:    V1.1
+#   Date:       22.01.18
 #   Function:   Convert a BibTeX file to HTML
 #   
 #   Copyright:  (c) Dr. Andrew C. R. Martin, UCL, 2018
@@ -48,6 +48,7 @@
 #   Revision History:
 #   =================
 #   V1.0   18.01.18   Original   By: ACRM
+#   V1.1   22.01.18   Fixed bug in filtering of 'other' entries
 #
 #*************************************************************************
 # Add the path of the executable to the library path
@@ -876,7 +877,7 @@ sub UsageDie
 {
     print <<__EOF;
 
-bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
+bib2html V1.1 (c) 2018, UCL, Dr. Andrew C.R. Martin
 
 Usage: bib2html [-y [-r]][-t][-c=toc.html [-css]] file.bib > file.html
        -y      Sort by year

@@ -4,7 +4,7 @@
 #   Program:    bib2html
 #   File:       bib2html.pl
 #   
-#   Version:    V1.1
+#   Version:    V1.2
 #   Date:       31.01.25
 #   Function:   Convert a BibTeX file to HTML
 #   
@@ -920,7 +920,7 @@ sub UsageDie
 {
     print <<__EOF;
 
-bib2html V1.0 (c) 2018, UCL, Dr. Andrew C.R. Martin
+bib2html V1.2 (c) 2018-2024, UCL, Prof. Andrew C.R. Martin
 
 Usage: bib2html [-y [-r]][-t][-c=toc.html [-css]] file.bib > file.html
        -y      Sort by year

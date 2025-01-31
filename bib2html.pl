@@ -4,12 +4,12 @@
 #   Program:    bib2html
 #   File:       bib2html.pl
 #   
-#   Version:    V1.0
-#   Date:       18.01.18
+#   Version:    V1.1
+#   Date:       31.01.25
 #   Function:   Convert a BibTeX file to HTML
 #   
-#   Copyright:  (c) Dr. Andrew C. R. Martin, UCL, 2018
-#   Author:     Dr. Andrew C. R. Martin
+#   Copyright:  (c) Prof. Andrew C. R. Martin, UCL, 2018-25
+#   Author:     Prof. Andrew C. R. Martin
 #   Address:    Institute of Structural and Molecular Biology
 #               Division of Biosciences
 #               University College
@@ -48,6 +48,7 @@
 #   Revision History:
 #   =================
 #   V1.0   18.01.18   Original   By: ACRM
+#   V1.1   31.01.25   Supports multiple suppmat entries
 #
 #*************************************************************************
 # Add the path of the executable to the library path
@@ -640,7 +641,24 @@ sub PrintSuppMat
     my(%entry) = @_;
     if(defined($entry{'suppmat'}))
     {
-        print " [<a href='$entry{'suppmat'}'>Supplementary Material</a>]";
+        # 31.01.25 Added handling of multiple suppmat entries
+
+        my $nEntries = scalar(@{$entry{'suppmat'}});
+        my $count    = 0;
+
+        foreach my $data (@{$entry{'suppmat'}})
+        {
+            $count++;
+            print " [<a href='$data'>Supplementary Material";
+            if($nEntries > 1)
+            {
+                print " ($count)";
+            }
+                
+
+            print  "</a>]";
+        }
+
         $::EndSentence = 1;
     }
 }
@@ -823,36 +841,48 @@ sub ReadEntry
     while(<>)
     {
         chomp;
-        if(/^@/)
+        s/^\s+//;
+        if(length($_)) # 31.01.25 If not a blank line
         {
-            $inEntry = 1;
-            my $line = substr($_,1);
-            $line = "\L$line";
-            ($entry{'class'}, $entry{'key'}) = split(/\{/, $line);
-        }
-        elsif(/^\}/)
-        {
-            last;
-        }
-        elsif($inEntry)
-        {
-            my $data;
-            s/^\a+//;
-            if(/=/)
+            if(/^@/)
             {
-                ($type, $data) = split(/\s*=\s*/,$_,2);
-                $type =~ s/\s//g;
-                $type = "\L$type";
-                $entry{$type} = $data;
+                $inEntry = 1;
+                my $line = substr($_,1);
+                $line = "\L$line";
+                ($entry{'class'}, $entry{'key'}) = split(/\{/, $line);
             }
-            elsif($type ne '')
+            elsif(/^\}/)
             {
-                s/^\s+//;
-                $entry{$type} .= " $_";
-
-                if(($type eq 'type') || ($type eq 'year'))
+                last;
+            }
+            elsif($inEntry)
+            {
+                my $data;
+                s/^\a+//;
+                if(/=/)
                 {
-                    $entry{$type} = "\L$entry{$type}";
+                    ($type, $data) = split(/\s*=\s*/,$_,2);
+                    $type =~ s/\s//g;
+                    $type = "\L$type";
+                    
+                    if($type eq 'suppmat')  # 31.01.25 Support multiple suppmat
+                    {
+                        push @{$entry{$type}}, $data;
+                    }
+                    else
+                    {
+                        $entry{$type} = $data;
+                    }
+                }
+                elsif($type ne '')
+                {
+                    s/^\s+//;
+                    $entry{$type} .= " $_";
+                    
+                    if(($type eq 'type') || ($type eq 'year'))
+                    {
+                        $entry{$type} = "\L$entry{$type}";
+                    }
                 }
             }
         }

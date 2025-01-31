@@ -48,7 +48,7 @@ will simply be ignored by BibTeX):
 - `subpdf` Provides a URL for the PDF as submitted
 - `pmid` Provides a link to PubMed in a `PMID:` link and applies the same URL to the title
 - `web` Provides a link to an associated web page
-- `suppmat` Provides a link to supplementary material
+- `suppmat` Provides a link to supplementary material (multiple entries allowed)
 - `type` Used to split the entries into group. By default all entries are treated as Articles. Types of `meeting abstract`, `review`, `chapter` will all be given their own sections (and table of content entries); other types will be grouped under "Other", but the code is designed to be easily modified to add sections for other types.
 - `url` Applies a URL to the title. This will take precedence over a URL generated from the PMID.
 

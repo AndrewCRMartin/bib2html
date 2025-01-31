@@ -890,11 +890,25 @@ sub ReadEntry
 
     foreach my $key (keys %entry)
     {
-        $entry{$key} =~ s/^\s+//;
-        $entry{$key} =~ s/\s+$//;
-        $entry{$key} =~ s/,$//;
-        $entry{$key} =~ s/^\"//;
-        $entry{$key} =~ s/\"$//;
+        if($key eq 'suppmat') # 31.01.25 handle multiple entries
+        {
+            foreach my $datum (@{$entry{$key}})
+            {
+                $datum =~ s/^\s+//;
+                $datum =~ s/\s+$//;
+                $datum =~ s/,$//;
+                $datum =~ s/^\"//;
+                $datum =~ s/\"$//;
+            }
+        }
+        else
+        {
+            $entry{$key} =~ s/^\s+//;
+            $entry{$key} =~ s/\s+$//;
+            $entry{$key} =~ s/,$//;
+            $entry{$key} =~ s/^\"//;
+            $entry{$key} =~ s/\"$//;
+        }
     }
 
     return(%entry);
